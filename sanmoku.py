@@ -1,5 +1,4 @@
 import numpy as np
-import logging
 # 三目並べクラス
 #
 # Player:
@@ -35,16 +34,9 @@ class Sanmoku:
         print("#"+"-"*11)
         print("# START")
         print("#"+"-"*11)
-        self.view()
 
         while True:
-            print("You are %s" % (self.PLAYER_MARU if self.player == 1 else self.PLAYER_BATSU))
-            print("Enter your pos[0-8]:")
-            pos = input()
-
-            # 入力した位置に配置
-            status = self.action(int(pos), self.player)
-            self.view()
+            status = self.manual()
 
             if status == 0:
                 continue
@@ -140,6 +132,17 @@ class Sanmoku:
         pos = np.random.choice(candidates)
         return self.action(pos, self.player)
 
+    # 配置場所指定
+    def manual(self):
+        self.view()
+
+        print("You are %s" % (self.PLAYER_MARU if self.player == 1 else self.PLAYER_BATSU))
+        print("Enter your pos[0-8]:")
+        pos = input()
+        # 入力した位置に配置
+        status = self.action(int(pos), self.player)
+
+        return status
 if __name__ == "__main__":
     game = Sanmoku()
     game.start()
