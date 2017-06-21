@@ -1,3 +1,10 @@
+import argparse
+
+# 引数
+parser = argparse.ArgumentParser(description='Sanmoku DQN')
+parser.add_argument('-l', dest="weight_file", help='load weight file and test')
+args = parser.parse_args()
+
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten
 from keras.optimizers import Adam
@@ -9,18 +16,15 @@ from rl.memory import SequentialMemory
 import rl.callbacks
 from sanmokuDQN import SanmokuDQN
 
+# 三目並べ環境作成
 env = SanmokuDQN()
 env.seed(123)
 nb_actions = env.action_space.n
 
-print(env.observation_space.shape)
+# ネットワークモデル作成
 model = Sequential()
 model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
-model.add(Dense(16))
-model.add(Activation('relu'))
-model.add(Dense(16))
-model.add(Activation('relu'))
-model.add(Dense(16))
+model.add(Dense(166))
 model.add(Activation('relu'))
 model.add(Dense(nb_actions))
 model.add(Activation('linear'))
@@ -32,8 +36,12 @@ dqn = DQNAgent(model=model, nb_actions=nb_actions, memory=memory, nb_steps_warmu
                             target_model_update=1e-2, policy=policy)
 dqn.compile(Adam(lr=1e-3), metrics=['mae'])
 
-history = dqn.fit(env, nb_steps=10000, visualize=False, verbose=2, nb_max_episode_steps=300)
-dqn.save_weights('dqn_{}_weights.h5f'.format("Sanmoku"), overwrite=True)
+if args.weight_file:
+    dqn.load_weights(args.weight_file)
+    dqn.test(env, nb_episodes=5, visualize=False, nb_max_episode_steps=300)
+else:
+    history = dqn.fit(env, nb_steps=10000, visualize=False, verbose=2, nb_max_episode_steps=300)
+    dqn.save_weights('dqn_{}_weights.h5f'.format("Sanmoku"), overwrite=True)
 
-# Finally, evaluate our algorithm for 5 episodes.
-dqn.test(env, nb_episodes=5, visualize=False, nb_max_episode_steps=300)
+    # Finally, evaluate our algorithm for 5 episodes.
+    dqn.test(env, nb_episodes=5, visualize=False, nb_max_episode_steps=300)
