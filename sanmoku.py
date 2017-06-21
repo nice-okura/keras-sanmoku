@@ -1,5 +1,5 @@
 import numpy as np
-
+import logging
 # 三目並べクラス
 #
 # Player:
@@ -29,9 +29,7 @@ class Sanmoku:
     def __init__(self):
         self.state = np.array([0.0]*9)
         # 先行
-        self.player = np.random.randint(2)+1
-        # 終了しているか
-        self.done = False
+        self.player = 1 # ○
 
     def start(self):
         print("#"+"-"*11)
@@ -45,31 +43,48 @@ class Sanmoku:
             pos = input()
 
             # 入力した位置に配置
-            if self.action([int(pos), self.player]):
+            status = self.action(int(pos), self.player)
+            self.view()
 
-                self.view()
-
-                if self.check_win():
-                    break
-
-                self.change_player()
-
-        print("You win!")
-        exit(0)
+            if status == 0:
+                continue
+            elif status == 1:
+                print("Draw...")
+                break
+            elif status == 2:
+                print("You win!")
+                break
 
     # 位置とプレイヤーを指定して配置
     # pos: [0-8]
     # player: 1:○ 2:×
+    #
+    # Return:
+    # -1: Error
+    # 0: Continue
+    # 1: Draw
+    # 2: Player Win
+
     def action(self, pos, player):
         if not self.check_action(pos, player):
-            return False
+            return -1
 
+        # oxを配置
         self.state[pos] = player
+        # 盤面の状態を確認
+        status = self.get_status()
+        # Continue(0)ならばプレイヤー変更
+        if status == 0:
+            self.change_player()
 
-        return True
+        return status
 
-    def check_win(self):
-
+    # 盤面の状態を確認
+    # Return
+    # 0: Continue
+    # 1: Draw
+    # 2: Player Win
+    def get_status(self):
         if (all((x == self.player for x in self.pickup(0,1,2))) or
             all((x == self.player for x in self.pickup(3,4,5))) or
             all((x == self.player for x in self.pickup(6,7,8))) or
@@ -78,9 +93,11 @@ class Sanmoku:
             all((x == self.player for x in self.pickup(2,5,8))) or
             all((x == self.player for x in self.pickup(0,4,8))) or
             all((x == self.player for x in self.pickup(2,4,6)))):
-            return True
+            return 2
+        elif len([i for i,x in enumerate(self.state) if x==0.0]) == 0:
+            return 1
 
-        return False
+        return 0
 
     def view(self):
         row = " {} | {} | {} "
@@ -97,10 +114,10 @@ class Sanmoku:
 
     def check_action(self, pos, player):
         if self.state[pos] != 0.0:
-            print("Already set player at pos: {}", pos)
+            #print("Already set player at pos: %d"%pos)
             return False
         elif pos not in range(0,9):
-            print("The position {} isn't not in [0-8].", pos)
+            print("The position %d isn't not in [0-8]."%pos)
             return False
 
         return True
@@ -110,6 +127,18 @@ class Sanmoku:
 
     def pickup(self, *nums):
         return [self.state[i] for i in nums]
+
+    def reset(self):
+        self.state = np.array([0.0]*9)
+        # 先行
+        self.player = 1 # ○
+
+    # ランダムに1手配置
+    def random(self):
+        # まだoもxも書いていない箇所からランダムに選択
+        candidates = [i for i,x in enumerate(self.state) if x==0.0]
+        pos = np.random.choice(candidates)
+        return self.action(pos, self.player)
 
 if __name__ == "__main__":
     game = Sanmoku()
