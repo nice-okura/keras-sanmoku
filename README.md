@@ -2,6 +2,7 @@
 keras-rlで三目並べを強化学習する
 
 ## Requirement
+- python (3.6.0)
 - tensorflow (1.2.0)
 - Keras (2.0.5)
 - keras-rl (0.3.0)
