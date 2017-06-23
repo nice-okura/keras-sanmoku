@@ -7,7 +7,7 @@ args = parser.parse_args()
 
 from keras.models import Sequential
 from keras.layers import Dense, Activation, Flatten
-from keras.optimizers import Adam
+from keras.optimizers import Adam, SGD, RMSprop, Adadelta
 
 from rl.agents.dqn import DQNAgent
 from rl.policy import EpsGreedyQPolicy
@@ -31,23 +31,27 @@ model = Sequential()
 model.add(Flatten(input_shape=(1,) + env.observation_space.shape))
 model.add(Dense(166))
 model.add(Activation('relu'))
+model.add(Dense(166))
+model.add(Activation('relu'))
+model.add(Dense(166))
+model.add(Activation('relu'))
 model.add(Dense(nb_actions))
 model.add(Activation('linear'))
 print(model.summary())
 
-memory = SequentialMemory(limit=1000, window_length=1)
+memory = SequentialMemory(limit=40000, window_length=1)
 policy = EpsGreedyQPolicy(eps=0.1)
 dqn = DQNAgent(model=model, nb_actions=nb_actions, memory=memory, nb_steps_warmup=100,
                             target_model_update=1e-2, policy=policy)
-dqn.compile(Adam(lr=1e-3), metrics=['mae'])
+dqn.compile(Adadelta(), metrics=['mae'])
 
 if args.weight_file:
     # 重みファイルを読み込んでtest
     dqn.load_weights(args.weight_file)
 else:
     # 学習
-    history = dqn.fit(env, nb_steps=10000, visualize=False, verbose=2, nb_max_episode_steps=300)
+    history = dqn.fit(env, nb_steps=40000, visualize=False, verbose=1, nb_max_episode_steps=300)
     dqn.save_weights('dqn_{}_weights.h5f'.format("Sanmoku"), overwrite=True)
 
 # Finally, evaluate our algorithm for 5 episodes.
-dqn.test(env, nb_episodes=5, visualize=False, nb_max_episode_steps=300)
+dqn.test(env, nb_episodes=10, visualize=False, nb_max_episode_steps=300)

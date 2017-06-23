@@ -24,6 +24,7 @@ import numpy as np
 class Sanmoku:
     PLAYER_MARU = "○"
     PLAYER_BATSU = "×"
+    WIN_LINES = [(0,1,2),(3,4,5),(6,7,8),(0,3,6),(1,4,7),(2,5,8),(0,4,8),(2,4,6)]
 
     def __init__(self):
         self.state = np.array([0.0]*9)
@@ -36,14 +37,19 @@ class Sanmoku:
         print("#"+"-"*11)
 
         while True:
-            status = self.manual()
+            if self.player == 1:
+                status = self.manual()
+            else:
+                status = self.chance_getter_man()
 
             if status == 0:
                 continue
             elif status == 1:
+                self.view()
                 print("Draw...")
                 break
             elif status == 2:
+                self.view()
                 print("You win!")
                 break
 
@@ -58,7 +64,7 @@ class Sanmoku:
     # 2: Player Win
 
     def action(self, pos, player):
-        if not self.check_action(pos, player):
+        if not self.valid_action(pos):
             return -1
 
         # oxを配置
@@ -104,12 +110,17 @@ class Sanmoku:
                 tempboard.append(" ")
         print((row + hr + row + hr + row).format(*tempboard))
 
-    def check_action(self, pos, player):
-        if self.state[pos] != 0.0:
-            #print("Already set player at pos: %d"%pos)
+    def valid_action(self, pos):
+        try:
+            if int(pos) not in range(0,9):
+                print("The position isn't not in [0-8].")
+                return False
+        except ValueError:
+            print("The position isn't not in [0-8].")
             return False
-        elif pos not in range(0,9):
-            print("The position %d isn't not in [0-8]."%pos)
+
+        if self.state[int(pos)] != 0.0:
+            #print("Already set player at pos: %d"%pos)
             return False
 
         return True
@@ -118,7 +129,7 @@ class Sanmoku:
         self.player = 2 if self.player == 1 else 1
 
     def pickup(self, *nums):
-        return [self.state[i] for i in nums]
+        return np.array([self.state[i] for i in nums])
 
     def reset(self):
         self.state = np.array([0.0]*9)
@@ -136,13 +147,40 @@ class Sanmoku:
     def manual(self):
         self.view()
 
-        print("You are %s" % (self.PLAYER_MARU if self.player == 1 else self.PLAYER_BATSU))
-        print("Enter your pos[0-8]:")
-        pos = input()
+        while True:
+            print("You are %s" % (self.PLAYER_MARU if self.player == 1 else self.PLAYER_BATSU))
+            print("Enter your pos[0-8]:")
+            pos = input()
+            if self.valid_action(pos):
+                break
+
         # 入力した位置に配置
         status = self.action(int(pos), self.player)
 
         return status
+
+    # 真ん中が空いていれば必ず真ん中に置き
+    # あと1手で勝てる場合は必ず勝てる手を置き
+    # そうでなければランダムに置く人
+    def chance_getter_man(self):
+        # 真ん中(4)が空いていれば必ず真ん中に置く
+        if self.state[4] == 0:
+            return self.action(4, self.player)
+
+        # あと1手で勝てる場合は勝てる手を置く
+        for idxs in self.WIN_LINES:
+            line = self.pickup(*idxs)
+            # すでに誰かが置いた位置
+            players_pos = line[line != 0.0]
+            # あと1手で勝てる場合
+            if len(players_pos) == 2 and all(players_pos == self.player):
+                pos = np.where(line == 0.0)[0][0]
+                return self.action(idxs[pos], self.player)
+
+        # なければランダム
+        return self.random()
+
+
 if __name__ == "__main__":
     game = Sanmoku()
     game.start()

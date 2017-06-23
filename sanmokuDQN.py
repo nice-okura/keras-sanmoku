@@ -45,7 +45,7 @@ class SanmokuDQN(gym.core.Env):
 
     def _step(self, action):
 
-        status = self.sm.action(action, 1)
+        status = self.sm.action(action, self.sm.player)
 
         logger.debug("action: %d" % action)
         # statusがDraw(1)またはPlayerWin(2)の場合終了
@@ -55,18 +55,18 @@ class SanmokuDQN(gym.core.Env):
         if status == -1:
             if self.mode == "manual":
                 print("Miss position!!")
-            reward = 0.0
+            reward = -1.0
         elif status == 1:
             if self.mode == "manual":
                 print("Draw...")
-            reward = 0.0
+            reward = -1.0
         elif status == 2:
             if self.mode == "manual":
                 self.print_winner()
             reward = 1.0
         else:
             if self.mode == "random":
-                status = self.sm.random()
+                status = self.sm.chance_getter_man()
             elif self.mode == "manual":
                 status = self.sm.manual()
                 if status == 2:
@@ -83,6 +83,13 @@ class SanmokuDQN(gym.core.Env):
     def _reset(self):
         logger.debug("_reset")
         self.sm.reset()
+
+        # AIが先行か後攻になるかはランダム
+        if np.random.randint(1,3) == 1:
+            if self.mode == "random":
+                self.sm.chance_getter_man()
+            elif self.mode == "manual":
+                self.sm.manual()
 
         return self.sm.state
 
